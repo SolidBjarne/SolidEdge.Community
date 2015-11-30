@@ -8,18 +8,25 @@ using System.Threading;
 namespace SolidEdgeCommunity
 {
     /// <summary>
-    /// Controller that handles connecting\disconnecting to COM events via IConnectionPointContainer and IConnectionPoint interfaces.
+    /// Default controller that handles connecting\disconnecting to COM events via IConnectionPointContainer and IConnectionPoint interfaces.
     /// </summary>
-    public abstract class ConnectionPointControllerBase
+    public class ConnectionPointController
     {
+        private object _sink;
         private Dictionary<IConnectionPoint, int> _connectionPointDictionary = new Dictionary<IConnectionPoint, int>();
+
+        public ConnectionPointController(object sink)
+        {
+            if (sink == null) throw new ArgumentNullException("sink");
+            _sink = sink;
+        }
 
         /// <summary>
         /// Establishes a connection between a connection point object and the client's sink.
         /// </summary>
         /// <typeparam name="TInterface">Interface type of the outgoing interface whose connection point object is being requested.</typeparam>
         /// <param name="container">An object that implements the IConnectionPointContainer inferface.</param>
-        protected void AdviseSink<TInterface>(object container) where TInterface : class
+        public void AdviseSink<TInterface>(object container) where TInterface : class
         {
             bool lockTaken = false;
 
@@ -42,7 +49,7 @@ namespace SolidEdgeCommunity
 
                 if (cp != null)
                 {
-                    cp.Advise(this, out cookie);
+                    cp.Advise(_sink, out cookie);
                     _connectionPointDictionary.Add(cp, cookie);
                 }
             }
@@ -59,7 +66,7 @@ namespace SolidEdgeCommunity
         /// Determines if a connection between a connection point object and the client's sink is established.
         /// </summary>
         /// <param name="container">An object that implements the IConnectionPointContainer inferface.</param>
-        protected bool IsSinkAdvised<TInterface>(object container) where TInterface : class
+        public bool IsSinkAdvised<TInterface>(object container) where TInterface : class
         {
             bool lockTaken = false;
 
@@ -99,7 +106,7 @@ namespace SolidEdgeCommunity
         /// </summary>
         /// <typeparam name="TInterface">Interface type of the interface whose connection point object is being requested to be removed.</typeparam>
         /// <param name="container">An object that implements the IConnectionPointContainer inferface.</param>
-        protected void UnadviseSink<TInterface>(object container) where TInterface : class
+        public void UnadviseSink<TInterface>(object container) where TInterface : class
         {
             bool lockTaken = false;
 
@@ -136,7 +143,7 @@ namespace SolidEdgeCommunity
         /// <summary>
         /// Terminates all advisory connections previously established.
         /// </summary>
-        protected void UnadviseAllSinks()
+        public void UnadviseAllSinks()
         {
             bool lockTaken = false;
 
@@ -157,24 +164,6 @@ namespace SolidEdgeCommunity
                 {
                     Monitor.Exit(this);
                 }
-            }
-        }
-
-        /// <summary>
-        /// Establishes or terminates a connection between a connection point object and the client's sink.
-        /// </summary>
-        /// <typeparam name="TInterface">Interface type of the interface whose connection point object is being requested to be updated.</typeparam>
-        /// <param name="container">An object that implements the IConnectionPointContainer inferface.</param>
-        /// <param name="advise">Flag indicating whether to advise or unadvise.</param>
-        protected void UpdateSink<TInterface>(object container, bool advise) where TInterface : class
-        {
-            if (advise)
-            {
-                AdviseSink<TInterface>(container);
-            }
-            else
-            {
-                UnadviseSink<TInterface>(container);
             }
         }
     }
